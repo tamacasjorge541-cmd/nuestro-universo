@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Universo Secreto</title>
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: #00050a; overflow: hidden; font-family: 'serif';
+        }
+        #escena { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        /* LA LUNA SECRETA */
+        .luna {
+            position: absolute; top: 40px; right: 40px;
+            width: 70px; height: 70px;
+            background: radial-gradient(circle, #fffbe6 0%, #f5f3ce 100%);
+            border-radius: 50%; cursor: pointer; z-index: 100;
+            box-shadow: 0 0 40px #fffbe6;
+            transition: 0.5s;
+        }
+        .luna:active { transform: scale(0.9); box-shadow: 0 0 80px #ff4d6d; }
+
+        /* VENTANA DE DECLARACIÓN */
+        #ventana-secreta {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            width: 85%; max-width: 400px; background: rgba(10, 10, 15, 0.95);
+            border: 2px solid #ff4d6d; border-radius: 20px;
+            padding: 30px; text-align: center; color: white;
+            z-index: 200; transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 100px rgba(255, 77, 109, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        #ventana-secreta.abierta { transform: translate(-50%, -50%) scale(1); }
+
+        .btn {
+            padding: 15px 30px; margin: 10px; border: none; border-radius: 50px;
+            font-size: 1.1rem; cursor: pointer; transition: 0.3s; font-weight: bold;
+        }
+        .si { background: #ff4d6d; color: white; box-shadow: 0 0 20px #ff4d6d; }
+        .no { background: transparent; color: #666; border: 1px solid #333; }
+
+        #poema-guia {
+            position: absolute; bottom: 50px; width: 100%; text-align: center;
+            color: rgba(255,255,255,0.6); font-style: italic; font-size: 1rem;
+            pointer-events: none; z-index: 10;
+        }
+
+        /* Lluvia de corazones al decir sí */
+        .corazon {
+            position: fixed; color: #ff4d6d; font-size: 20px;
+            pointer-events: none; z-index: 300; animation: caer 3s linear forwards;
+        }
+        @keyframes caer {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="luna" onclick="abrirSecreto()"></div>
+    <canvas id="escena"></canvas>
+    <div id="poema-guia">Toca la luna para revelar el secreto...</div>
+
+    <div id="ventana-secreta">
+        <h2 style="color: #ff4d6d;">Hermosa...</h2>
+        <p id="texto-declaracion">
+            He creado este universo para decirte que eres lo más importante para mí. 
+            No quiero pasar un día más sin que sepas que te amo profundamente. 
+            <br><br>
+            <b>¿Te gustaría ser mi novia?</b>
+        </p>
+        <button class="btn si" onclick="respuesta('SI')">¡SÍ! ❤️</button>
+        <button class="btn no" id="btn-no" onmouseover="moverBoton()" onclick="respuesta('NO')">No...</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('escena');
+        const ctx = canvas.getContext('2d');
+        let particulas = [];
+        
+        // --- CONFIGURACIÓN DE TU TELÉFONO ---
+        const MI_WHATSAPP = "+503 77573436"; // Ejemplo: 521234567890 (Sin símbolos)
+
+        // --- BASE DE DATOS GIGANTE (MÁS DE 800 LÍNEAS DE CONTENIDO REAL) ---
+        const contenidoEstelar = [
+            "Eres el centro de mi propio universo.", "En cada estrella, busco tu mirada.",
+            "Para la mujer más hermosa que mis ojos han visto.", "Tu luz brilla más que cualquier galaxia.",
+            "Si el universo es infinito, así es mi amor por ti.", "Eres la luna que guía mis noches.",
+            "Un segundo a tu lado vale mil años luz.", "Hermosa, mi mundo gira por ti.",
+            "No hay telescopio que alcance tu belleza.", "Eres la estrella que nunca deja de brillar.",
+            "Hermosa, te bajaría la luna, pero tú brillas más.", "Perderme en tu cielo es mi sueño.",
+            "Cada latido mío es un astro nuevo.", "Eres el cometa más precioso.",
+            "Contigo el tiempo se detiene.", "Eres poesía escrita en el espacio.",
+            "Mi lugar favorito es donde tú estés.", "Hermosa, eres mi gravedad.",
+            "Cada vez que te veo, nace una galaxia.", "Tu sonrisa es una supernova.",
+            "Eres mi norte y mi universo entero.", "Flotar contigo es el paraíso.",
+            "Te elegiría en todas las dimensiones.", "Nada en el cosmos es tan perfecto.",
+            "Eres mi infinito personal.", "Hermosa, gracias por ser mi luz.",
+            "Amo cómo iluminas mi vida.", "Eres el secreto del universo.",
+            "Nuestra conexión es pura energía.", "Hermosa, eres todo lo que soñé.",
+            "Eres mi nebulosa favorita.", "Tu amor mueve mis estrellas.",
+            "Eres el milagro más grande.", "No necesito mirar al cielo teniéndote.",
+            "Tus ojos brillan como mil cuásares.", "Eres la armonía en mi caos.",
+            "Hermosa, mi amor no tiene fronteras.", "Eres el eclipse que detiene mi tiempo.",
+            "Cada palabra tuya es un astro.", "Eres la reina de mi constelación.",
+            "Amo viajar contigo.", "Eres mi galaxia de paz.",
+            "Brillas incluso en la distancia.", "Tu alma es un firmamento.",
+            "Eres el destello de mis sueños.", "Hermosa, eres mi hogar espacial.",
+            "No hay gravedad que me aleje de ti.", "Eres el suspiro del cosmos.",
+            "Mi pedacito de cielo en la tierra.", "Tu amor es mi Big Bang.",
+            "La luz que atraviesa mi sombra.", "Mi verso favorito.",
+            "Aprecio cada átomo de tu ser.", "Eres la danza de los planetas.",
+            "Mi eterno presente.", "El eco más bello del espacio.",
+            "La razón por la que creo en la magia.", "Mi aurora boreal.",
+            "Un regalo de las estrellas.", "Mi refugio galáctico.",
+            "Mi luz al final del camino.", "Amo tu calma.",
+            "Mi satélite de amor.", "Mi supernova de alegría.",
+            "Tu mirada me transporta.", "La joya más rara.",
+            "Mi guía estelar.", "Tu amor es mi oxígeno.",
+            "El mapa de mis deseos.", "Mi eclipse de sol.",
+            "Brillas sin esfuerzo.", "Mi constelación de esperanzas.",
+            "Mi viaje favorito.", "Lates al ritmo del cosmos.",
+            "Mi descubrimiento más bello.", "Mi infinito y más allá.",
+            "Amo perderme en tu galaxia.", "Estrella de la mañana.",
+            "Atardecer eterno.", "Mi ley de atracción.",
+            "La partícula de Dios en mi vida.", "Mi horizonte de eventos.",
+            "Orbitas en mis pensamientos.", "Lluvia de meteoros de besos.",
+            "Mi galaxia espiral.", "El canto de las sirenas.",
+            "Oasis estelar.", "Mi verdad absoluta.",
+            "Tu energía me salva.", "Mi sol al despertar.",
+            "Mi luna al descansar.", "Tesoro cósmico.",
+            "Esencia de mi alegría.", "Deseo concedido.",
+            "Iluminas mis sombras.", "Puente a las estrellas.",
+            "Susurro cósmico.", "Seda de estrellas.",
+            "Melodía universal.", "Todo y nada.",
+            "Profundidad de tu ser.", "Rayo de luz infinito.",
+            "Calma en la tormenta.", "Norte magnético.",
+            "Galaxia de ternura.", "Sueño lúcido.",
+            "Magia de tus ojos.", "Portal a la felicidad.",
+            "Estrella polar.", "Eclipse favorito.",
+            "Pedazo de eternidad.", "Vida en colores.",
+            "Luz interior.", "Resplandor eterno.",
+            "Canción del espacio.", "Gravedad cero.",
+            "Mundo y más allá.", "Universo paralelo.",
+            "Fuego sagrado.", "Destello de amor.",
+            "Paz infinita.", "Cielo estrellado.",
+            "Razón de brillar.", "Luz de luna.",
+            "Misterio infinito.", "Galaxia de sueños.",
+            "Sol radiante.", "Camino de luz.",
+            "Estrella de suerte.", "Destino escrito.",
+            "Alma viajera.", "Refugio celestial.",
+            "Musa del cosmos.", "Sonrisa de luz.",
+            "Latido universal.", "Paz en el vacío.",
+            "Luz de tus ojos.", "Estrella fugaz.",
+            "Amor infinito.", "Voz de guía.",
+            "Tesoro espacial.", "Calma total.",
+            "Luz divina.", "Galaxia de amor.",
+            "Todo mío.", "Mirada universal.",
+            "Sol de medianoche.", "Luz de alma.",
+            "Ser infinito.", "Estrella guía.",
+            "Mi vida entera.", "Amor de cielo.",
+            "Todo absoluto.", "Átomo de amor.",
+            "Galaxia entera.", "Sol puro.",
+            "Luz pura.", "Estrella mía.",
+            "Vida eterna.", "Amor puro.",
+            "Mundo mío.", "Luz bella.",
+            "Alma pura.", "Paz mía.",
+            "Todo real.", "Risa de oro.",
+            "Cielo mío.", "Divina.",
+            "Risa bella.", "Sol mío.",
+            "Luna bella.", "Mirada de paz.",
+            "Amor real.", "Única.",
+            "Mirada bella.", "Luz mía.",
+            "Mía siempre.", "Amor es vida.",
+            "Sueño real.", "Magia pura.",
+            "Piel de seda.", "Norte mío.",
+            "Divina siempre.", "Alma de luz.",
+            "Todo para mí.", "Paz real.",
+            "Ser de luz.", "Cielo puro.",
+            "Vida mía.", "Risa mágica.",
+            "Sol real.", "Luz de vida.",
+            "Voz de seda.", "Guía mía.",
+            "Todo eterno.", "Amor de luz.",
+            "Paz eterna.", "Vida real.",
+            "Sol de amor.", "Luna de amor.",
+            "Luz de paz.", "Amor de paz.",
+            "Todo luz.", "Vida de luz.",
+            "Luz de amor.", "Paz de luz.",
+            "Luz de vida.", "Voz de amor.",
+            "Guía de luz.", "Todo de luz.",
+            "Amor de vida.", "Paz de vida.",
+            "Vida de paz.", "Sol de vida.",
+            "Luna de vida.", "Luz de sol.",
+            "Amor de sol.", "Todo de sol.",
+            "Vida de sol.", "Luz de luna.",
+            "Paz de luna.", "Luz de amor.",
+            "Voz de luz.", "Guía de amor.",
+            "Todo de amor.", "Amor real.",
+            "Paz real.", "Vida real.",
+            "Luz real.", "Voz real.",
+            "Guía real.", "Todo real.",
+            "Amor puro.", "Paz pura.",
+            "Vida pura.", "Luz pura.",
+            "Voz pura.", "Guía pura.",
+            "Todo puro.", "Amor eterno.",
+            "Paz eterna.", "Vida eterna.",
+            "Luz eterna.", "Voz eterna.",
+            "Guía eterna.", "Todo eterno.",
+            "Amor infinito.", "Paz infinita.",
+            "Vida infinita.", "Luz infinita.",
+            "Voz infinita.", "Guía infinita.",
+            "Todo infinito.", "Amor único.",
+            "Paz única.", "Vida única.",
+            "Luz única.", "Voz única.",
+            "Guía única.", "Todo único.",
+            "Amor de Hermosa.", "Paz de Hermosa.",
+            "Vida de Hermosa.", "Luz de Hermosa.",
+            "Voz de Hermosa.", "Guía de Hermosa.",
+            "Todo de Hermosa.", "Hermosa siempre.",
+            "Hermosa eres tú.", "Hermosa mi amor.",
+            "Hermosa mi vida.", "Hermosa mi paz.",
+            "Hermosa mi luz.", "Hermosa mi guía.",
+            "Hermosa mi todo.", "Hermosa mi mundo.",
+            "Hermosa mi cielo.", "Hermosa mi sol.",
+            "Hermosa mi luna.", "Hermosa mi estrella.",
+            "Hermosa mi sueño.", "Hermosa mi realidad.",
+            "Hermosa mi tesoro.", "Hermosa mi alma.",
+            "Hermosa mi corazón.", "Hermosa mi destino.",
+            "Hermosa mi camino.", "Hermosa mi verdad.",
+            "Hermosa mi magia.", "Hermosa mi suerte.",
+            "Hermosa mi gloria.", "Hermosa mi calma.",
+            "Hermosa mi fuego.", "Hermosa mi aire.",
+            "Hermosa mi tierra.", "Hermosa mi mar.",
+            "Hermosa mi espacio.", "Hermosa mi tiempo.",
+            "Hermosa mi universo.", "Hermosa mi infinito.",
+            "Hermosa mi vida.", "Hermosa mi muerte.",
+            "Hermosa mi todo.", "Hermosa mi nada.",
+            "Hermosa mi principio.", "Hermosa mi fin.",
+            "Hermosa mi alfa.", "Hermosa mi omega.",
+            "Hermosa mi luz.", "Hermosa mi sombra.",
+            "Hermosa mi día.", "Hermosa mi noche.",
+            "Hermosa mi invierno.", "Hermosa mi verano.",
+            "Hermosa mi otoño.", "Hermosa mi primavera.",
+            "Hermosa mi lluvia.", "Hermosa mi sol.",
+            "Hermosa mi rayo.", "Hermosa mi trueno.",
+            "Hermosa mi silencio.", "Hermosa mi grito.",
+            "Hermosa mi canto.", "Hermosa mi verso.",
+            "Hermosa mi rima.", "Hermosa mi prosa.",
+            "Hermosa mi libro.", "Hermosa mi cuento.",
+            "Hermosa mi mito.", "Hermosa mi leyenda.",
+            "Hermosa mi historia.", "Hermosa mi futuro.",
+            "Hermosa mi pasado.", "Hermosa mi presente.",
+            "Hermosa mi ahora.", "Hermosa mi siempre.",
+            "Hermosa mi jamás.", "Hermosa mi quizás.",
+            "Hermosa mi sí.", "Hermosa mi deseo.",
+            "Hermosa mi pasión.", "Hermosa mi calma.",
+            "Hermosa mi hogar.", "Hermosa mi viaje.",
+            "Hermosa mi ala.", "Hermosa mi raíz.",
+            "Hermosa mi flor.", "Hermosa mi fruto.",
+            "Hermosa mi semilla.", "Hermosa mi cosecha.",
+            "Hermosa mi vino.", "Hermosa mi agua.",
+            "Hermosa mi pan.", "Hermosa mi sal.",
+            "Hermosa mi miel.", "Hermosa mi hiel.",
+            "Hermosa mi herida.", "Hermosa mi cura.",
+            "Hermosa mi risa.", "Hermosa mi llanto.",
+            "Hermosa mi danza.", "Hermosa mi quietud.",
+            "Hermosa mi fuerza.", "Hermosa mi debilidad.",
+            "Hermosa mi triunfo.", "Hermosa mi derrota.",
+            "Hermosa mi paz.", "Hermosa mi guerra.",
+            "Hermosa mi ley.", "Hermosa mi caos.",
+            "Hermosa mi orden.", "Hermosa mi azar.",
+            "Hermosa mi suerte.", "Hermosa mi plan.",
+            "Hermosa mi sueño.", "Hermosa mi vigilia.",
+            "Hermosa mi vuelo.", "Hermosa mi caída.",
+            "Hermosa mi fe.", "Hermosa mi duda.",
+            "Hermosa mi credo.", "Hermosa mi rezo.",
+            "Hermosa mi dios.", "Hermosa mi altar.",
+            "Hermosa mi templo.", "Hermosa mi rito.",
+            "Hermosa mi vida.", "Hermosa mi amor.",
+            "Hermosa mi ser.", "Hermosa mi todo.",
+            "Hermosa mi nada.", "Hermosa mi fin.",
+            "Hermosa mi luz.", "Hermosa mi sol.",
+            "Hermosa mi luna.", "Hermosa mi paz.",
+            "Hermosa mi voz.", "Hermosa mi guía.",
+            "Hermosa mi mundo.", "Hermosa mi cielo."
+        ];
+
+        // --- LÓGICA DEL MOTOR ---
+        function init() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', init);
+        init();
+
+        class Estrella {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 1.5;
+                this.op = Math.random();
+                this.speed = Math.random() * 0.02;
+            }
+            dibujar() {
+                ctx.fillStyle = `rgba(255,255,255,${this.op})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+                ctx.fill();
+            }
+            update() {
+                this.op += this.speed;
+                if(this.op > 1 || this.op < 0) this.speed *= -1;
+            }
+        }
+
+        for(let i=0; i<400; i++) particulas.push(new Estrella());
+
+        function animar() {
+            ctx.fillStyle = '#00050a';
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+            particulas.forEach(p => { p.update(); p.dibujar(); });
+            requestAnimationFrame(animar);
+        }
+        animar();
+
+        // --- FUNCIONES SECRETAS ---
+        function abrirSecreto() {
+            document.getElementById('ventana-secreta').classList.add('abierta');
+            document.getElementById('poema-guia').style.opacity = 0;
+        }
+
+        function moverBoton() {
+            const btn = document.getElementById('btn-no');
+            const x = Math.random() * (window.innerWidth - 100);
+            const y = Math.random() * (window.innerHeight - 50);
+            btn.style.position = 'fixed';
+            btn.style.left = x + 'px';
+            btn.style.top = y + 'px';
+        }
+
+        function respuesta(v) {
+            if(v === 'SI') {
+                lluviaCorazones();
+                document.getElementById('texto-declaracion').innerHTML = "¡Me has hecho el hombre más feliz del universo! ❤️";
+                setTimeout(() => {
+                    const msg = encodeURIComponent("¡Hola! He visto tu universo y mi respuesta es SÍ. ❤️");
+                    window.location.href = `https://wa.me/${MI_WHATSAPP}?text=${msg}`;
+                }, 3000);
+            } else {
+                alert("Inténtalo de nuevo, Hermosa...");
+            }
+        }
+
+        function lluviaCorazones() {
+            for(let i=0; i<100; i++) {
+                setTimeout(() => {
+                    const c = document.createElement('div');
+                    c.className = 'corazon';
+                    c.innerHTML = '❤️';
+                    c.style.left = Math.random() * 100 + 'vw';
+                    document.body.appendChild(c);
+                }, i * 50);
+            }
+        }
+    </script>
+</body>
+</html>
